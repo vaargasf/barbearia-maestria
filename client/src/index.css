@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 225 9% 9%;
+    --foreground: 210 40% 98%;
+    --card: 228 9% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 228 9% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 252 100% 69%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 228 6% 16%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 228 6% 16%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 228 6% 16%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 228 6% 16%;
+    --input: 228 6% 16%;
+    --ring: 212.7 26.8% 83.9%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@layer components {
+  .app-shell {
+    @apply w-full mx-auto flex flex-col flex-1;
+    max-width: 100%;
+  }
+
+  @screen sm {
+    .app-shell {
+      max-width: 640px;
+    }
+  }
+
+  @screen md {
+    .app-shell {
+      max-width: 768px;
+    }
+  }
+
+  @screen lg {
+    .app-shell {
+      max-width: 1024px;
+    }
+  }
+
+  @screen xl {
+    .app-shell {
+      max-width: 1100px;
+    }
+  }
+
+  .section-title {
+    @apply flex items-center gap-2 text-xs sm:text-sm mb-3 sm:mb-4 uppercase text-muted-foreground font-bold tracking-wide;
+  }
+
+  .section-title-accent {
+    @apply h-4 w-1 rounded-full bg-primary shrink-0;
+  }
+
+  .barber-scroll {
+    @apply -mx-1;
+  }
+}

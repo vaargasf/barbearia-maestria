@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ROLE_ADMIN
+  ROLE_CLIENT
+}
+
+enum AppointmentStatus {
+  AGENDADO
+  CANCELADO
+  FINALIZADO
+  CANCELADO_POR_BARBEIRO
+  CANCELADO_POR_CLIENTE
+  PROPOSTA_REAGENDAMENTO
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  name             String   @db.VarChar(255)
+  email            String   @unique @db.VarChar(255)
+  cpf              String   @unique @db.VarChar(14)
+  phone            String   @unique @db.VarChar(20)
+  password         String   @db.VarChar(255)
+  role             UserRole
+  active           Boolean  @default(true)
+  isBarber         Boolean  @default(false) @map("is_barber")
+  avatarUrl        String?  @map("avatar_url") @db.VarChar(500)
+  assignedBarberId Int?     @map("assigned_barber_id")
+  assignedBarber   User?    @relation("ClientBarber", fields: [assignedBarberId], references: [id], onDelete: SetNull)
+  assignedClients  User[]   @relation("ClientBarber")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  barberServices       Service[]
+  barberAppointments   Appointment[]   @relation("BarberAppointments")
+  clientAppointments   Appointment[]   @relation("ClientAppointments")
+  availability         Availability[]
+  datesOff             BarberDateOff[]
+
+  @@map("users")
+}
+
+model Service {
+  id              Int           @id @default(autoincrement())
+  name            String        @db.VarChar(255)
+  price           Decimal       @db.Decimal(10, 2)
+  durationMinutes Int?          @map("duration_minutes")
+  description     String?       @db.VarChar(1000)
+  active          Boolean       @default(true)
+  barberId        Int           @map("barber_id")
+  barber          User          @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
+
+  @@index([barberId])
+  @@map("services")
+}
+
+model Appointment {
+  id                Int               @id @default(autoincrement())
+  clientId          Int               @map("client_id")
+  barberId          Int               @map("barber_id")
+  serviceId         Int               @map("service_id")
+  date              DateTime          @db.Date
+  startTime         String            @map("start_time") @db.VarChar(5)
+  endTime           String            @map("end_time") @db.VarChar(5)
+  status            AppointmentStatus
+  observation       String?           @db.Text
+  barberMessage     String?           @map("barber_message") @db.Text
+  proposedDate      DateTime?         @map("proposed_date") @db.Date
+  proposedStartTime String?           @map("proposed_start_time") @db.VarChar(5)
+  proposedEndTime   String?           @map("proposed_end_time") @db.VarChar(5)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  client            User              @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  barber            User              @relation("BarberAppointments", fields: [barberId], references: [id], onDelete: Cascade)
+  service           Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([barberId])
+  @@index([date])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Availability {
+  id        Int    @id @default(autoincrement())
+  barberId  Int    @map("barber_id")
+  dayOfWeek Int    @map("day_of_week")
+  startTime String @map("start_time") @db.VarChar(5)
+  endTime   String @map("end_time") @db.VarChar(5)
+  barber    User   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@index([barberId])
+  @@map("availability")
+}
+
+model BarberDateOff {
+  id       Int      @id @default(autoincrement())
+  barberId Int      @map("barber_id")
+  dateOff  DateTime @map("date_off") @db.Date
+  barber   User     @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@unique([barberId, dateOff])
+  @@map("barber_date_off")
+}

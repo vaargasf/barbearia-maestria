@@ -1,0 +1,15 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: maestria-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: barbearia_maestria
+    ports:
+      - "3306:3306"
+    volumes:
+      - maestria_mysql_data:/var/lib/mysql
+
+volumes:
+  maestria_mysql_data:
