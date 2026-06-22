@@ -146,6 +146,21 @@ export async function listMyServices(barberId) {
   return services.map(mapService)
 }
 
+export async function createMyService(barberId, body) {
+  const created = await prisma.service.create({
+    data: {
+      barberId,
+      name: body.name,
+      price: body.price,
+      durationMinutes: body.durationMinutes ?? 30,
+      description: body.description ?? null,
+      active: body.active ?? true,
+    },
+    include: serviceInclude,
+  })
+  return mapService(created)
+}
+
 export async function updateMyService(barberId, serviceId, body) {
   const existing = await prisma.service.findFirst({ where: { id: serviceId, barberId } })
   if (!existing) throw new AppError('Serviço não encontrado', 404)
@@ -155,6 +170,18 @@ export async function updateMyService(barberId, serviceId, body) {
     include: serviceInclude,
   })
   return mapService(updated)
+}
+
+export async function deleteMyService(barberId, serviceId) {
+  const existing = await prisma.service.findFirst({ where: { id: serviceId, barberId } })
+  if (!existing) throw new AppError('Serviço não encontrado', 404)
+
+  const appointmentCount = await prisma.appointment.count({ where: { serviceId } })
+  if (appointmentCount > 0) {
+    throw new AppError('Não é possível remover um serviço com agendamentos vinculados', 400)
+  }
+
+  await prisma.service.delete({ where: { id: serviceId } })
 }
 
 const COUNTABLE_STATUSES = ['AGENDADO', 'FINALIZADO', 'PROPOSTA_REAGENDAMENTO']

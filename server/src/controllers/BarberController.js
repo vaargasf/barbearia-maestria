@@ -68,6 +68,11 @@ export async function listServices(req, res) {
   res.json(await barberService.listMyServices(req.user.userId))
 }
 
+export async function createService(req, res) {
+  const result = await barberService.createMyService(req.user.userId, req.body)
+  res.status(201).json(result)
+}
+
 export async function updateService(req, res) {
   const result = await barberService.updateMyService(
     req.user.userId,
@@ -75,4 +80,9 @@ export async function updateService(req, res) {
     req.body
   )
   res.json(result)
+}
+
+export async function deleteService(req, res) {
+  await barberService.deleteMyService(req.user.userId, Number(req.params.serviceId))
+  res.status(204).send()
 }

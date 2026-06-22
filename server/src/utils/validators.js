@@ -28,6 +28,14 @@ export const updateProfileSchema = z
   })
   .refine((data) => Object.keys(data).length > 0, { message: 'Nenhum dado para atualizar' })
 
+export const createServiceSchema = z.object({
+  name: z.string().min(2, 'Nome inválido'),
+  price: z.coerce.number().positive('Preço inválido'),
+  durationMinutes: z.coerce.number().int().positive().optional(),
+  description: z.string().optional(),
+  active: z.boolean().optional(),
+})
+
 export const updateServiceSchema = z.object({
   name: z.string().min(2).optional(),
   price: z.coerce.number().positive().optional(),

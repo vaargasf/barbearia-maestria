@@ -47,6 +47,7 @@ export async function getAvailableSlots(barberId, dateStr, serviceId) {
   if (windows.length === 0) return []
 
   const duration = service.durationMinutes ?? 30
+  const SLOT_INTERVAL = 30
   const appointments = await prisma.appointment.findMany({
     where: {
       barberId,
@@ -73,7 +74,7 @@ export async function getAvailableSlots(barberId, dateStr, serviceId) {
     const windowStart = timeToMinutes(window.startTime.slice(0, 5))
     const windowEnd = timeToMinutes(window.endTime.slice(0, 5))
 
-    for (let start = windowStart; start + duration <= windowEnd; start += duration) {
+    for (let start = windowStart; start + duration <= windowEnd; start += SLOT_INTERVAL) {
       if (minMinutes != null && start < minMinutes) continue
 
       const end = start + duration

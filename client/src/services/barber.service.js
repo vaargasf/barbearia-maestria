@@ -19,6 +19,8 @@ export const barberService = {
   getDateOff: () => api.get('/api/barbers/date-off').then((r) => r.data),
   setDateOff: (datesOff) => api.put('/api/barbers/date-off', { datesOff }).then((r) => r.data),
   listMyServices: () => api.get('/api/barbers/services').then((r) => r.data),
+  createMyService: (body) => api.post('/api/barbers/services', body).then((r) => r.data),
+  deleteMyService: (serviceId) => api.delete(`/api/barbers/services/${serviceId}`),
   getStats: () => api.get('/api/barbers/stats').then((r) => r.data),
   updateMyService: (serviceId, body) =>
     api.put(`/api/barbers/services/${serviceId}`, body).then((r) => r.data),

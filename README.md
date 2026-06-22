@@ -1,126 +1,134 @@
 # Barbearia Maestria
 
-Sistema de agendamento online para barbearia, com fluxo público para clientes e painel exclusivo para barbeiros.
+Plataforma de agendamento online para barbearias. Clientes reservam horários sem cadastro; barbeiros gerenciam agenda, serviços e disponibilidade em um painel dedicado.
 
-Monorepo com frontend React e backend Node.js seguindo arquitetura **Controller → Service → Prisma**.
+---
 
-## Funcionalidades
+## Visão geral
 
-### Cliente (sem login)
-- Escolha do barbeiro, serviço, data e horário
-- Confirmação com nome, telefone e e-mail
-- Exportação do agendamento para Google Calendar ou Apple Calendar (.ics)
+| Público   | Acesso        | Descrição                                      |
+|-----------|---------------|------------------------------------------------|
+| Cliente   | Site público  | Escolha de barbeiro, serviço, data e horário |
+| Barbeiro  | Área restrita | Dashboard, agenda, clientes e configurações    |
 
-### Barbeiro (área restrita)
-- Dashboard com gráficos de agendamentos e receita mensal
-- Gestão de agendamentos, clientes e histórico
-- Edição de serviços e preços
-- Configuração de disponibilidade e folgas
-- Perfil com upload de foto
+**Principais recursos**
 
-## Stack
+- Agendamento público com confirmação por nome, telefone e e-mail
+- Exportação para Google Calendar e Apple Calendar (`.ics`)
+- Painel do barbeiro com métricas, histórico e gestão de serviços
+- Controle de disponibilidade, folgas e perfil profissional
+- API REST com autenticação JWT e validação de entrada
 
-| Camada    | Tecnologias |
-|-----------|-------------|
-| Frontend  | React, Vite, Tailwind CSS, Axios, Recharts |
-| Backend   | Node.js, Express, Prisma ORM |
-| Banco     | MySQL 8 |
-| Auth      | JWT (8h), bcrypt |
-| Segurança | Helmet, CORS, rate limit, validação com Zod |
+---
 
-## Estrutura
+## Arquitetura
+
+Monorepo com separação clara entre frontend e backend.
 
 ```
 barbearia-maestria/
-├── client/                 # Frontend React
-│   └── src/
-│       ├── components/
-│       ├── contexts/
-│       ├── pages/
-│       ├── routes/
-│       ├── services/
-│       └── constants/
-└── server/                 # Backend Express
-    ├── prisma/
-    └── src/
-        ├── controllers/
-        ├── routes/
-        ├── services/
-        ├── middlewares/
-        └── utils/
+├── client/          # Interface React (Vite + Tailwind)
+└── server/          # API Express (Controller → Service → Prisma)
 ```
+
+**Stack**
+
+| Camada    | Tecnologias                                      |
+|-----------|--------------------------------------------------|
+| Frontend  | React 18, Vite, Tailwind CSS, Axios, Recharts    |
+| Backend   | Node.js, Express, Prisma ORM                     |
+| Banco     | MySQL 8                                          |
+| Segurança | JWT, bcrypt, Helmet, CORS, rate limit, Zod       |
+
+---
 
 ## Pré-requisitos
 
-- Node.js 18+
-- MySQL 8
+- [Node.js](https://nodejs.org/) 18 ou superior
+- [Docker](https://www.docker.com/) (recomendado para o banco) **ou** MySQL 8 instalado localmente
 
-## Instalação
+---
+
+## Configuração
+
+### 1. Clonar e instalar dependências
 
 ```bash
+git clone https://github.com/vaargasf/barbearia-maestria.git
+cd barbearia-maestria
 npm run install:all
 ```
 
-Crie o arquivo `server/.env`:
+### 2. Banco de dados
 
-```env
-PORT=6060
-JWT_SECRET=sua-chave-secreta-forte
-FRONTEND_URL=http://localhost:5173
-DATABASE_URL="mysql://usuario:senha@localhost:3306/barbearia_maestria"
+Com Docker:
+
+```bash
+docker compose up -d
 ```
 
-Configure o banco e popule os dados iniciais:
+O serviço sobe MySQL na porta `3306` com o banco `barbearia_maestria`.
+
+### 3. Variáveis de ambiente
+
+Crie o arquivo `server/.env` com as configurações do ambiente. Variáveis necessárias:
+
+| Variável       | Descrição                              |
+|----------------|----------------------------------------|
+| `PORT`         | Porta da API                           |
+| `JWT_SECRET`   | Chave secreta para assinatura dos tokens |
+| `FRONTEND_URL` | URL do frontend (CORS)                 |
+| `DATABASE_URL` | String de conexão com o MySQL          |
+
+> Mantenha credenciais e segredos fora do controle de versão. O arquivo `.env` não deve ser commitado.
+
+### 4. Migrar e popular o banco
 
 ```bash
 npm run db:setup
 ```
 
+---
+
 ## Desenvolvimento
 
-```bash
-# Terminal 1 — API
-npm run dev:server
+Inicie a API e o frontend em terminais separados:
 
-# Terminal 2 — Frontend
-npm run dev:client
+```bash
+npm run dev:server   # API — http://localhost:6060
+npm run dev:client   # App — http://localhost:5173
 ```
 
-- Frontend: http://localhost:5173
-- API: http://localhost:6060
-- Health check: http://localhost:6060/health
+Health check da API: `GET /health`
 
-## Acesso
+---
 
-| Perfil  | URL              | Credenciais demo        |
-|---------|------------------|-------------------------|
-| Cliente | `/`              | Agendamento sem login   |
-| Barbeiro| `/login`         | `eric@maestria.com` / `123456` |
+## Scripts disponíveis
 
-> O link de login do barbeiro não aparece no site público — acesso direto pela URL `/login`.
+| Comando              | Descrição                              |
+|----------------------|----------------------------------------|
+| `npm run install:all`| Instala dependências de client e server |
+| `npm run db:setup`   | Sincroniza schema e executa seed       |
+| `npm run dev:server` | API com hot reload                     |
+| `npm run dev:client` | Frontend com Vite                      |
+| `npm run build`      | Build de produção do frontend          |
+
+---
 
 ## API
 
-Prefixo base: `/api`
+Base URL: `/api`
 
-| Grupo    | Rotas |
-|----------|-------|
-| Público  | `GET /public/barbers`, serviços, horários, `POST /public/appointments` |
-| Auth     | `POST /auth/login` |
-| Barbeiro | `GET/PUT /barbers/profile`, agendamentos, serviços, stats, disponibilidade |
+| Grupo    | Endpoints principais                                              |
+|----------|-------------------------------------------------------------------|
+| Público  | Barbeiros, serviços, horários disponíveis, criação de agendamento |
+| Auth     | Login de barbeiro                                                 |
+| Barbeiro | Perfil, agendamentos, serviços, estatísticas, disponibilidade     |
 
-Autenticação: `Authorization: Bearer <token>`
+Rotas protegidas exigem o header `Authorization: Bearer <token>`.
 
-## Scripts
-
-```bash
-npm run install:all   # instala dependências do client e server
-npm run db:setup      # cria tabelas + seed
-npm run dev:server    # API com hot reload
-npm run dev:client    # frontend Vite
-npm run build         # build de produção do frontend
-```
+---
 
 ## Licença
 
-Projeto privado — Barbearia Maestria.
+Projeto privado — Barbearia Maestria. Todos os direitos reservados.

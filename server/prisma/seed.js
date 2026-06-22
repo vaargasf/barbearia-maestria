@@ -116,12 +116,18 @@ async function main() {
 
     await prisma.availability.createMany({
       data: [
-        { barberId: barber.id, dayOfWeek: 1, startTime: '09:00', endTime: '19:00' },
-        { barberId: barber.id, dayOfWeek: 2, startTime: '09:00', endTime: '19:00' },
-        { barberId: barber.id, dayOfWeek: 3, startTime: '09:00', endTime: '19:00' },
-        { barberId: barber.id, dayOfWeek: 4, startTime: '09:00', endTime: '19:00' },
-        { barberId: barber.id, dayOfWeek: 5, startTime: '09:00', endTime: '19:00' },
-        { barberId: barber.id, dayOfWeek: 6, startTime: '09:00', endTime: '17:00' },
+        { barberId: barber.id, dayOfWeek: 1, startTime: '09:00', endTime: '12:00' },
+        { barberId: barber.id, dayOfWeek: 1, startTime: '14:00', endTime: '19:00' },
+        { barberId: barber.id, dayOfWeek: 2, startTime: '09:00', endTime: '12:00' },
+        { barberId: barber.id, dayOfWeek: 2, startTime: '14:00', endTime: '19:00' },
+        { barberId: barber.id, dayOfWeek: 3, startTime: '09:00', endTime: '12:00' },
+        { barberId: barber.id, dayOfWeek: 3, startTime: '14:00', endTime: '19:00' },
+        { barberId: barber.id, dayOfWeek: 4, startTime: '09:00', endTime: '12:00' },
+        { barberId: barber.id, dayOfWeek: 4, startTime: '14:00', endTime: '19:00' },
+        { barberId: barber.id, dayOfWeek: 5, startTime: '09:00', endTime: '12:00' },
+        { barberId: barber.id, dayOfWeek: 5, startTime: '14:00', endTime: '19:00' },
+        { barberId: barber.id, dayOfWeek: 6, startTime: '09:00', endTime: '12:00' },
+        { barberId: barber.id, dayOfWeek: 6, startTime: '14:00', endTime: '17:00' },
       ],
     })
   }

@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { authMiddleware, requireBarber, requireRoles } from '../middlewares/auth.js'
 import { validate } from '../middlewares/validate.js'
-import { avatarSchema, updateProfileSchema, updateServiceSchema } from '../utils/validators.js'
+import { avatarSchema, createServiceSchema, updateProfileSchema, updateServiceSchema } from '../utils/validators.js'
 import * as BarberController from '../controllers/BarberController.js'
 
 const router = Router()
@@ -34,10 +34,16 @@ router.put('/date-off', asyncHandler(BarberController.setDateOff))
 
 router.get('/stats', asyncHandler(BarberController.getStats))
 router.get('/services', asyncHandler(BarberController.listServices))
+router.post(
+  '/services',
+  validate(createServiceSchema),
+  asyncHandler(BarberController.createService)
+)
 router.put(
   '/services/:serviceId',
   validate(updateServiceSchema),
   asyncHandler(BarberController.updateService)
 )
+router.delete('/services/:serviceId', asyncHandler(BarberController.deleteService))
 
 export default router

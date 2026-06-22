@@ -14,9 +14,75 @@ const DAYS = [
   { value: 7, label: 'Domingo' },
 ]
 
+const TIME_STEP = 1800
+
+function defaultDay(dayOfWeek) {
+  const weekday = dayOfWeek <= 6
+  return {
+    dayOfWeek,
+    enabled: weekday,
+    startTime: '09:00',
+    endTime: '18:00',
+    hasBreak: weekday,
+    breakStart: '12:00',
+    breakEnd: '14:00',
+  }
+}
+
+function parseAvailability(avail) {
+  const byDay = {}
+  for (const a of avail) {
+    if (!byDay[a.dayOfWeek]) byDay[a.dayOfWeek] = []
+    byDay[a.dayOfWeek].push({
+      startTime: (a.startTime || '').slice(0, 5),
+      endTime: (a.endTime || '').slice(0, 5),
+    })
+  }
+
+  return DAYS.map((d) => {
+    const windows = (byDay[d.value] || []).sort((a, b) => a.startTime.localeCompare(b.startTime))
+    if (windows.length === 0) return defaultDay(d.value)
+
+    if (windows.length >= 2) {
+      return {
+        dayOfWeek: d.value,
+        enabled: true,
+        startTime: windows[0].startTime,
+        endTime: windows[windows.length - 1].endTime,
+        hasBreak: true,
+        breakStart: windows[0].endTime,
+        breakEnd: windows[1].startTime,
+      }
+    }
+
+    return {
+      dayOfWeek: d.value,
+      enabled: true,
+      startTime: windows[0].startTime,
+      endTime: windows[0].endTime,
+      hasBreak: false,
+      breakStart: '12:00',
+      breakEnd: '14:00',
+    }
+  })
+}
+
+function scheduleToSlots(schedule) {
+  const slots = []
+  for (const day of schedule) {
+    if (!day.enabled) continue
+    if (day.hasBreak) {
+      slots.push({ dayOfWeek: day.dayOfWeek, startTime: day.startTime, endTime: day.breakStart })
+      slots.push({ dayOfWeek: day.dayOfWeek, startTime: day.breakEnd, endTime: day.endTime })
+    } else {
+      slots.push({ dayOfWeek: day.dayOfWeek, startTime: day.startTime, endTime: day.endTime })
+    }
+  }
+  return slots
+}
 
 export function BarberAvailability() {
-  const [slots, setSlots] = useState([])
+  const [schedule, setSchedule] = useState(DAYS.map((d) => defaultDay(d.value)))
   const [datesOff, setDatesOff] = useState([])
   const [newDateOff, setNewDateOff] = useState('')
   const [loading, setLoading] = useState(true)
@@ -28,52 +94,22 @@ export function BarberAvailability() {
       .then(([avail, off]) => {
         setDatesOff(off)
         if (avail.length > 0) {
-          setSlots(
-            avail.map((a) => ({
-              dayOfWeek: a.dayOfWeek,
-              startTime: (a.startTime || '').slice(0, 5),
-              endTime: (a.endTime || '').slice(0, 5),
-            }))
-          )
-        } else {
-          // Padrão: Segunda a Sábado, 09:00–18:00 (o barbeiro pode alterar dias e horários)
-          setSlots(
-            DAYS.filter((d) => d.value <= 6).map((d) => ({
-              dayOfWeek: d.value,
-              startTime: '09:00',
-              endTime: '18:00',
-            }))
-          )
+          setSchedule(parseAvailability(avail))
         }
       })
       .finally(() => setLoading(false))
   }, [])
 
-  const addSlot = () => {
-    setSlots((prev) => [...prev, { dayOfWeek: 1, startTime: '09:00', endTime: '18:00' }])
-  }
-
-  const updateSlot = (index, field, value) => {
-    setSlots((prev) => {
-      const next = [...prev]
-      next[index] = { ...next[index], [field]: value }
-      return next
-    })
-  }
-
-  const removeSlot = (index) => {
-    setSlots((prev) => prev.filter((_, i) => i !== index))
+  const updateDay = (dayOfWeek, field, value) => {
+    setSchedule((prev) =>
+      prev.map((d) => (d.dayOfWeek === dayOfWeek ? { ...d, [field]: value } : d))
+    )
   }
 
   const save = async () => {
     setSaving(true)
     try {
-      const body = slots.map((s) => ({
-        dayOfWeek: s.dayOfWeek,
-        startTime: s.startTime,
-        endTime: s.endTime,
-      }))
-      await barberService.setAvailability(body)
+      await barberService.setAvailability(scheduleToSlots(schedule))
     } finally {
       setSaving(false)
     }
@@ -108,55 +144,96 @@ export function BarberAvailability() {
 
       <Card className="mb-6">
         <p className="text-white/80 mb-4">
-          Escolha em quais dias da semana você atende e o horário de cada dia. Por padrão vêm Segunda a Sábado (09:00–18:00); você pode alterar, adicionar ou remover dias e horários.
+          Configure seus dias e horários de atendimento. Você pode definir um intervalo (pausa) no meio do dia — por exemplo, almoço das 12:00 às 14:00.
         </p>
-        {slots.map((slot, index) => (
-          <div key={index} className="flex flex-wrap gap-4 items-end mb-4 p-3 border border-maestria-border/20 rounded">
-            <div className="flex-1 min-w-[120px]">
-              <label className="block text-sm text-white/80 mb-1">Dia</label>
-              <select
-                className="w-full px-4 py-2 bg-black border border-maestria-border/30 rounded text-white"
-                value={slot.dayOfWeek}
-                onChange={(e) => updateSlot(index, 'dayOfWeek', Number(e.target.value))}
-              >
-                {DAYS.map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+        {schedule.map((day) => {
+          const dayLabel = DAYS.find((d) => d.value === day.dayOfWeek)?.label
+          return (
+            <div
+              key={day.dayOfWeek}
+              className={`mb-4 p-4 border border-maestria-border/20 rounded ${!day.enabled ? 'opacity-60' : ''}`}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  id={`day-${day.dayOfWeek}`}
+                  checked={day.enabled}
+                  onChange={(e) => updateDay(day.dayOfWeek, 'enabled', e.target.checked)}
+                  className="rounded border-maestria-border/30"
+                />
+                <label htmlFor={`day-${day.dayOfWeek}`} className="text-white font-medium">
+                  {dayLabel}
+                </label>
+              </div>
+
+              {day.enabled && (
+                <div className="flex flex-wrap gap-4 items-end">
+                  <div>
+                    <label className="block text-sm text-white/80 mb-1">Início</label>
+                    <input
+                      type="time"
+                      step={TIME_STEP}
+                      className="px-4 py-2 bg-black border border-maestria-border/30 rounded text-white"
+                      value={day.startTime}
+                      onChange={(e) => updateDay(day.dayOfWeek, 'startTime', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-white/80 mb-1">Fim</label>
+                    <input
+                      type="time"
+                      step={TIME_STEP}
+                      className="px-4 py-2 bg-black border border-maestria-border/30 rounded text-white"
+                      value={day.endTime}
+                      onChange={(e) => updateDay(day.dayOfWeek, 'endTime', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end pb-2">
+                    <input
+                      type="checkbox"
+                      id={`break-${day.dayOfWeek}`}
+                      checked={day.hasBreak}
+                      onChange={(e) => updateDay(day.dayOfWeek, 'hasBreak', e.target.checked)}
+                      className="rounded border-maestria-border/30"
+                    />
+                    <label htmlFor={`break-${day.dayOfWeek}`} className="text-sm text-white/80">
+                      Tem intervalo
+                    </label>
+                  </div>
+
+                  {day.hasBreak && (
+                    <>
+                      <div>
+                        <label className="block text-sm text-white/80 mb-1">Intervalo início</label>
+                        <input
+                          type="time"
+                          step={TIME_STEP}
+                          className="px-4 py-2 bg-black border border-maestria-border/30 rounded text-white"
+                          value={day.breakStart}
+                          onChange={(e) => updateDay(day.dayOfWeek, 'breakStart', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-white/80 mb-1">Intervalo fim</label>
+                        <input
+                          type="time"
+                          step={TIME_STEP}
+                          className="px-4 py-2 bg-black border border-maestria-border/30 rounded text-white"
+                          value={day.breakEnd}
+                          onChange={(e) => updateDay(day.dayOfWeek, 'breakEnd', e.target.value)}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
-            <div>
-              <label className="block text-sm text-white/80 mb-1">Início</label>
-              <input
-                type="time"
-                className="px-4 py-2 bg-black border border-maestria-border/30 rounded text-white"
-                value={slot.startTime}
-                onChange={(e) => updateSlot(index, 'startTime', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-white/80 mb-1">Fim</label>
-              <input
-                type="time"
-                className="px-4 py-2 bg-black border border-maestria-border/30 rounded text-white"
-                value={slot.endTime}
-                onChange={(e) => updateSlot(index, 'endTime', e.target.value)}
-              />
-            </div>
-            <Button variant="ghost" onClick={() => removeSlot(index)}>
-              Remover
-            </Button>
-          </div>
-        ))}
-        <div className="flex gap-2 mt-4">
-          <Button variant="secondary" onClick={addSlot}>
-            Adicionar horário
-          </Button>
-          <Button onClick={save} loading={saving}>
-            Salvar horários
-          </Button>
-        </div>
+          )
+        })}
+        <Button onClick={save} loading={saving}>
+          Salvar horários
+        </Button>
       </Card>
 
       <Card>
